@@ -73,7 +73,7 @@ Class Action {
 		}
 		$check = $this->db->query("SELECT * FROM users where email ='$email' ".(!empty($id) ? " and id != {$id} " : ''))->num_rows;
 		if($check > 0){
-			return 2;
+			return array('status' => 'failure', 'message' => 'Correo Electrónico ya Registrado!');
 			exit;
 		}
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
@@ -109,10 +109,11 @@ Class Action {
 
 				// Enviar el correo
 				$mail->send();
-				echo 'Correo enviado correctamente';
-				return 1;
+				return array('status' => 'success', 'message' => 'Usuario creado exitosamente');
+				//return 1;
 			} catch (Exception $e) {
 				echo 'Error al enviar el correo: ', $mail->ErrorInfo;
+				return array('status' => 'failure', 'message' => 'Error al enviar el correo');
 			}
 		}else{
 			$save = $this->db->query("UPDATE users set $data where id = $id");
@@ -146,6 +147,7 @@ Class Action {
 			}
 		}
 		if($save){
+			echo json_encode(['status' => 'success', 'message' => 'Usuario creado exitosamente']);
 			return 1;
 		}
 	}

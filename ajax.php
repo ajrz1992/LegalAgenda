@@ -34,7 +34,8 @@ if($action == 'signup'){
 if($action == 'save_user'){
 	$save = $crud->save_user();
 	if($save)
-		echo $save;
+		echo json_encode($save);
+
 }
 if($action == 'update_user'){
 	$save = $crud->update_user();
@@ -106,7 +107,7 @@ if($action == 'save_progress'){
 	if($save)
 		$response['status'] = 'success';
 		$response['message'] = 'Tarea creada satisfactoriamente';
-		echo json_encode($response);
+		echo json_encode($save);
 }
 if($action == 'delete_progress'){
 	$save = $crud->delete_progress();
