@@ -58,6 +58,8 @@ Class Action {
 	function save_user(){
 		extract($_POST);
 		$data = "";
+	
+		// Construir los datos de la consulta SQL
 		foreach($_POST as $k => $v){
 			if(!in_array($k, array('id','password')) && !is_numeric($k)){
 				if(empty($data)){
@@ -67,83 +69,87 @@ Class Action {
 				}
 			}
 		}
+	
 		if(!empty($password)){
-					$data .= ", password=md5('$password') ";
-
+			$data .= ", password=md5('$password') ";
 		}
-		$check = $this->db->query("SELECT * FROM users where email ='$email' ".(!empty($id) ? " and id != {$id} " : ''))->num_rows;
+	
+		// Validar que el email no esté repetido
+		$check = $this->db->query("SELECT * FROM users WHERE email ='$email' ".(!empty($id) ? " AND id != {$id} " : ''))->num_rows;
 		if($check > 0){
 			return array('status' => 'failure', 'message' => 'Correo Electrónico ya Registrado!');
 			exit;
 		}
+	
+		// Manejo del avatar si se sube una imagen
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
 			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
 			$move = move_uploaded_file($_FILES['img']['tmp_name'],'assets/uploads/'. $fname);
 			$data .= ", avatar = '$fname' ";
-
+		} else {
+			// Si no hay imagen subida, asignar imagen por defecto
+			if(empty($data)){
+				$data = "avatar = 'no-image-available.png'";
+			} else {
+				$data .= ", avatar = 'no-image-available.png'";
+			}
 		}
+	
+		// Si el ID está vacío, es una inserción
 		if(empty($id)){
-		if(!isset($_FILES['img']) || (isset($_FILES['img']) && $_FILES['img']['tmp_name'] == '')){	
-			$data .= ", avatar = 'no-image-available.png' ";
-		}
-			$save = $this->db->query("INSERT INTO users set $data");
-			$mail = new PHPMailer(true); // Lanza excepciones en caso de error
+			$save = $this->db->query("INSERT INTO users SET $data");
+	
+			// Configuración y envío de correo para nuevo usuario
+			$mail = new PHPMailer(true);
 			try {
-				// Configuración del servidor SMTP
-				$mail->isSMTP(); // Usar SMTP
-				$mail->Host = 'smtp.hostinger.com'; // Host del servidor SMTP
-				$mail->SMTPAuth = true; // Autenticación SMTP
-				$mail->Username = 'soporte.legalagenda@tecnologiainnovacion.com'; // Nombre de usuario SMTP
-				$mail->Password = 'Admin2024_$'; // Contraseña SMTP
-				$mail->SMTPSecure = 'tls'; // Seguridad TLS (opcional)
-				$mail->Port = 587; // Puerto SMTP (tls: 587, ssl: 465)
-
-				// Configuración del remitente y destinatario
+				$mail->isSMTP();
+				$mail->Host = 'smtp.hostinger.com';
+				$mail->SMTPAuth = true;
+				$mail->Username = 'soporte.legalagenda@tecnologiainnovacion.com';
+				$mail->Password = 'Admin2024_$';
+				$mail->SMTPSecure = 'tls';
+				$mail->Port = 587;
+	
 				$mail->setFrom('soporte.legalagenda@tecnologiainnovacion.com', 'Soporte-LegalAgenda');
 				$mail->addAddress($email, 'Usuario Creado');
-
-				// Contenido del correo
-				$mail->isHTML(true); // Habilitar contenido HTML
+	
+				$mail->isHTML(true);
 				$mail->Subject = 'Bienvenido';
-				$mail->Body    = 'Bienvenido a Legal Agenda';
-
-				// Enviar el correo
+				$mail->Body = 'Bienvenido a Legal Agenda';
+	
 				$mail->send();
 				return array('status' => 'success', 'message' => 'Usuario creado exitosamente');
-				//return 1;
 			} catch (Exception $e) {
 				echo 'Error al enviar el correo: ', $mail->ErrorInfo;
 				return array('status' => 'failure', 'message' => 'Error al enviar el correo');
 			}
-		}else{
-			$save = $this->db->query("UPDATE users set $data where id = $id");
-			$mail = new PHPMailer(true); // Lanza excepciones en caso de error
-
+		} else {
+			// Si el ID está presente, es una actualización
+			$save = $this->db->query("UPDATE users SET $data WHERE id = $id");
+	
+			// Configuración y envío de correo para usuario modificado
+			$mail = new PHPMailer(true);
 			try {
-				// Configuración del servidor SMTP
-				$mail->isSMTP(); // Usar SMTP
-				$mail->Host = 'smtp.hostinger.com'; // Host del servidor SMTP
-				$mail->SMTPAuth = true; // Autenticación SMTP
-				$mail->Username = 'soporte.legalagenda@tecnologiainnovacion.com'; // Nombre de usuario SMTP
-				$mail->Password = 'Admin2024_$'; // Contraseña SMTP
-				$mail->SMTPSecure = 'tls'; // Seguridad TLS (opcional)
-				$mail->Port = 587; // Puerto SMTP (tls: 587, ssl: 465)
-
-				// Configuración del remitente y destinatario
+				$mail->isSMTP();
+				$mail->Host = 'smtp.hostinger.com';
+				$mail->SMTPAuth = true;
+				$mail->Username = 'soporte.legalagenda@tecnologiainnovacion.com';
+				$mail->Password = 'Admin2024_$';
+				$mail->SMTPSecure = 'tls';
+				$mail->Port = 587;
+	
 				$mail->setFrom('soporte.legalagenda@tecnologiainnovacion.com', 'Soporte-LegalAgenda');
 				$mail->addAddress($email, 'Usuario Modificado');
-
-				// Contenido del correo
-				$mail->isHTML(true); // Habilitar contenido HTML
+	
+				$mail->isHTML(true);
 				$mail->Subject = 'Usuario Modificado';
-				$mail->Body    = 'Sus datos de usuario han sido modificados.';
-
-				// Enviar el correo
+				$mail->Body = 'Sus datos de usuario han sido modificados.';
+	
 				$mail->send();
-				echo 'Correo enviado correctamente';
-				return 1;
+				return array('status' => 'success', 'message' => 'Usuario actualizado correctamente');
 			} catch (Exception $e) {
 				echo 'Error al enviar el correo: ', $mail->ErrorInfo;
+				return array('status' => 'failure', 'message' => 'Error al enviar el correo');
 			}
 		}
 		if($save){
