@@ -1,7 +1,7 @@
 <?php include 'db_connect.php' ?>
 <style>
 	.view_task{
-		display: flex; /* Utilizamos flexbox */
+		/*display: flex; /* Utilizamos flexbox */
     justify-content: flex-end; /* Alineamos los elementos al extremo derecho */
     padding: 10px; /* Añadimos espacio alrededor del contenedor */
 	}

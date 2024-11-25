@@ -65,7 +65,18 @@ if(isset($_GET['id'])){
 			<div class="col-md-6">
 				<dl>
 					<dt><b class="border-bottom border-primary">Fecha de Vencimiento</b></dt>
-					<dd><?php echo date("m d,Y",strtotime($due_date)) ?></dd>
+					<dd><?php
+					$months = [
+						'January' => 'enero', 'February' => 'febrero', 'March' => 'marzo',
+						'April' => 'abril', 'May' => 'mayo', 'June' => 'junio',
+						'July' => 'julio', 'August' => 'agosto', 'September' => 'septiembre',
+						'October' => 'octubre', 'November' => 'noviembre', 'December' => 'diciembre'
+					];
+					$date = strtotime($due_date);
+					$formatted_date = date("d", $date) . " de " . $months[date("F", $date)] . " de " . date("Y", $date);
+					echo "<dd>$formatted_date</dd>";
+					?></dd>
+					
 				</dl>
 				<dl>
 					<dt><b class="border-bottom border-primary">Estado</b></dt>
@@ -159,32 +170,52 @@ if(isset($_GET['id'])){
 			</div>
 		</div>
 		<!-- Aqui empiezo a poner los otros nuevos de esta tarea -->
-		<?php		
-					$valor = $conn->query("SELECT * from camposnuevos_tareas where id_tarea=".$_GET['id']);
-                     while($row=$valor->fetch_assoc()):
-						$i=$row['campobdd'];
-        				?>
-                        <div class="row">
-							<div class="col-md-12">
-								<dl>
-									<dt><b class="border-bottom border-primary"><?php echo $row['campo']; ?></b></dt>
-									<dd>
-										<?php
-											$sql = "SELECT " . $i . " FROM task_list WHERE id=".$_GET['id']; 
-											$resultado = $conn->query($sql);
-											if ($resultado->num_rows > 0) {
-												$row_inner = $resultado->fetch_assoc();
-												$nombre = $row_inner[$i];
-											} else {
-												$nombre = ""; 
-											}
-											echo html_entity_decode($nombre);
-										?>
-									</dd>
-								</dl>
-							</div>
-						</div>
-                    <?php endwhile; ?>
+		<?php
+$valor = $conn->query("SELECT * FROM camposnuevos_tareas WHERE id_tarea=" . $_GET['id']);
+while ($row = $valor->fetch_assoc()):
+    $i = $row['campobdd'];
+    ?>
+    <div class="row">
+        <div class="col-md-12">
+            <dl>
+                <dt><b class="border-bottom border-primary"><?php echo $row['campo']; ?></b></dt>
+                <dd>
+                    <?php
+                    // Obtener el valor del campo desde la tabla task_list
+                    $sql = "SELECT " . $i . " FROM task_list WHERE id=" . $_GET['id'];
+                    $resultado = $conn->query($sql);
+                    if ($resultado->num_rows > 0) {
+                        $row_inner = $resultado->fetch_assoc();
+                        $nombre = $row_inner[$i];
+                    } else {
+                        $nombre = "";
+                    }
+
+                    // Verificar si el campo es de tipo fecha
+                    if ($row['tipo'] === 'date') {
+                        $months = [
+                            'January' => 'enero', 'February' => 'febrero', 'March' => 'marzo',
+                            'April' => 'abril', 'May' => 'mayo', 'June' => 'junio',
+                            'July' => 'julio', 'August' => 'agosto', 'September' => 'septiembre',
+                            'October' => 'octubre', 'November' => 'noviembre', 'December' => 'diciembre'
+                        ];
+                        $date = strtotime($nombre); // Convertir el valor a timestamp
+                        if ($date) { // Verificar que sea una fecha válida
+                            $formatted_date = date("d", $date) . " de " . $months[date("F", $date)] . " de " . date("Y", $date);
+                            echo html_entity_decode($formatted_date);
+                        } else {
+                            echo "Formato de fecha inválido";
+                        }
+                    } else {
+                        // Renderizar el valor tal cual si no es fecha
+                        echo html_entity_decode($nombre);
+                    }
+                    ?>
+                </dd>
+            </dl>
+        </div>
+    </div>
+<?php endwhile; ?>
 	</div>
 </div>
 <style>

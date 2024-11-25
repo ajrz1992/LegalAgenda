@@ -127,6 +127,7 @@ const isEmail = input => /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/.test(input);
 			success:function(resp){
 				if(resp == 1){
 					alert_toast('Datos grabados satisfactoriamente',"Proceso Exitóso");
+					$('#exampleModal').hide();
 					setTimeout(function(){
 						location.reload()
 					},1500)

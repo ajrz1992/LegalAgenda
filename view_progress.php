@@ -9,6 +9,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
 if (isset($_SESSION['id']) && !empty($_SESSION['id'])) {
     
     $ids = $_SESSION['id'];
+    $empresa = $_SESSION['login_empresa'];
     $idArray = explode(',', $ids); // Convertir la cadena de IDs en un array
     
     // Escapar los IDs para evitar SQL injection
@@ -22,20 +23,20 @@ if (isset($_SESSION['id']) && !empty($_SESSION['id'])) {
             t.task AS task_title, 
             t.id AS task_id, 
             CONCAT(u.firstname, ' ', u.lastname) AS uname, 
-            u.avatar, 
+            u.avatar,
             DATE_FORMAT(p.date_created, '%Y-%m-%d') AS calendar_date 
         FROM task_progress p 
         INNER JOIN task_list t ON t.id = p.task_id 
-        INNER JOIN employee_list u ON u.id = t.employee_id 
+        LEFT JOIN employee_list u ON u.id = t.employee_id 
         WHERE p.task_id IN ($idList) 
         ORDER BY p.task_id, p.date_created ASC
     ");
 
-    // Arreglo para agrupar las tareas por ID
     $tasks = [];
     if ($progress->num_rows > 0) {
         while ($row = $progress->fetch_assoc()) {
-            $tasks[$row['task_id']][] = $row; // Agrupar por task_id
+            // Agrupar por task_id
+            $tasks[$row['task_id']][] = $row;
         }
     }
     ?>
@@ -53,77 +54,98 @@ if (isset($_SESSION['id']) && !empty($_SESSION['id'])) {
     <style>
         /* Estilos del timeline */
         .timeline-container {
-            position: relative;
-            padding: 20px 0;
-            margin: 0;
-        }
-        .timeline-line {
-            position: absolute;
-            left: 0;
-            top: 60%;
-            width: 100%;
-            height: 2px;
-            background-color: #007bff;
-            z-index: 1;
-        }
-        .timeline-items {
-            display: flex;
-            overflow-x: auto;
-            padding: 10px 0;
-        }
-        .timeline-item {
-            position: relative;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-right: 20px;
-            padding: 10px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
-            flex: 0 0 auto;
-            width: 200px;
-        }
-        .timeline-item-content {
-            position: relative;
-            z-index: 2;
-        }
-        .user-block {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 0.5rem;
-        }
-        .user-block .username {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .user-block .username a {
-            font-weight: bold;
-            color: #007bff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .user-block .description {
-            font-size: 0.875rem;
-            color: #6c757d;
-        }
-        #post-field {
-            max-height: 70vh;
-            overflow: auto;
-        }
-        form {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        form h5 {
-            margin-bottom: 20px;
-            color: #007bff;
-        }
+    position: relative;
+    padding: 20px 0;
+    margin: 0;
+}
+
+.timeline-line {
+    position: absolute;
+    left: 0;
+    top: 60%;
+    width: 100%;
+    height: 2px;
+    background-color: #007bff;
+    z-index: 1;
+}
+
+.timeline-items {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.timeline-item {
+    position: relative;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-right: 20px;
+    padding: 10px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    flex: 0 0 auto;
+    width: 250px; /* Aumentado para dar más espacio */
+    max-width: 300px; /* Asegura que no se haga demasiado grande */
+    word-wrap: break-word; /* Evita que el texto se desborde */
+}
+
+.timeline-item-content {
+    position: relative;
+    z-index: 2;
+    align-items: baseline;
+}
+
+.user-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.user-block .username {
+    display: flex;
+    flex-direction: column;
+    align-items: baseline;
+   
+}
+
+.user-block .username a {
+    font-weight: bold;
+    color: #007bff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-block .description {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.timeline-item b {
+    font-size: 1rem; /* Ajusta el tamaño de la fecha */
+    font-weight: bold;
+    line-height: 1.2; /* Ajusta la altura de línea para no ocupar tanto espacio vertical */
+}
+
+#post-field {
+    max-height: 70vh;
+    overflow: auto;
+}
+
+form {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+form h5 {
+    margin-bottom: 20px;
+    color: #007bff;
+}
     </style>
 </head>
 <body>
@@ -141,7 +163,25 @@ if (isset($_SESSION['id']) && !empty($_SESSION['id'])) {
                                         <div class="user-block">
                                             <span class="username">
                                                 <a href="#"><?php echo htmlspecialchars(ucwords($row['action'])); ?></a>
-                                                <b><?php echo htmlspecialchars(date('M d, Y', strtotime($row['FechaCalendario']))); ?></b>
+                                                <b><?php 
+                                                $months = [
+                                                    'January' => 'enero', 'February' => 'febrero', 'March' => 'marzo',
+                                                    'April' => 'abril', 'May' => 'mayo', 'June' => 'junio',
+                                                    'July' => 'julio', 'August' => 'agosto', 'September' => 'septiembre',
+                                                    'October' => 'octubre', 'November' => 'noviembre', 'December' => 'diciembre'
+                                                ];
+                                                
+                                                // Convierte la fecha a formato timestamp
+                                                $date = strtotime($row['FechaCalendario']);
+                                                
+                                                // Formatea la fecha con el arreglo de meses traducidos
+                                                $formatted_date = date("d", $date) . " de " . $months[date("F", $date)] . " de " . date("Y", $date);
+                                                
+                                                // Escapa la salida para evitar inyecciones de HTML o JS
+                                                echo htmlspecialchars($formatted_date);
+                                                
+                                                
+                                               // echo htmlspecialchars(date('M d, Y', strtotime($row['FechaCalendario']))); ?></b>
                                                 <br><br>
                                             </span>
                                         </div>
@@ -179,6 +219,7 @@ if (isset($_SESSION['id']) && !empty($_SESSION['id'])) {
                     <input type="date" class="form-control" id="PlazoLegal" name="PlazoLegal">
                 </div>
                 <input type="hidden" name="task_id" value="<?php echo htmlspecialchars($ids); ?>">
+                <input type="hidden" name="empresa" value="<?php echo htmlspecialchars($empresa); ?>">
                 <button type="submit" class="btn btn-primary">Añadir Acción</button>
             </form>
             <div id="message-box" style="margin-top: 10px; font-weight: bold;"></div>
@@ -260,10 +301,10 @@ if (isset($_SESSION['id']) && !empty($_SESSION['id'])) {
                         // Actualiza el timeline sin recargar la página
                         updateTimeline();
 
-                         // Recarga la página después de 1 segundos
+                          Recarga la página después de 1 segundos
                          setTimeout(function() {
-                            location.reload();
-                        }, 1000);
+                           location.reload();
+                            }, 1000);
 
                     } else {
                         $('#errorMessage').text(data.message);
